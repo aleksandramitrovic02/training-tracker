@@ -1,0 +1,34 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+**/bin/
+**/obj/
+
+# Logs
+*.log
+
+# ASP.NET Core secrets (keep appsettings.json)
+appsettings.*.json
+!appsettings.json
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+.cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files (optional - decide later)
+# **/src/environments/environment*.ts
