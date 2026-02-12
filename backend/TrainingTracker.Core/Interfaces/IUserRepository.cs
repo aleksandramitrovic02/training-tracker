@@ -11,4 +11,6 @@ public interface IUserRepository
 
     Task<bool> EmailExistsAsync(string email, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
+    Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken ct = default);
+    Task AddRefreshTokenAsync(RefreshToken token, CancellationToken ct = default);
 }
