@@ -1,6 +1,15 @@
-﻿namespace TrainingTracker.Api.Extensions
+﻿using System.Security.Claims;
+
+namespace TrainingTracker.Api.Extensions;
+
+public static class ClaimsPrincipalExtensions
 {
-    public class ClaimsPrincipalExtensions
+    public static Guid GetUserId(this ClaimsPrincipal user)
     {
+        var value = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(value))
+            throw new UnauthorizedAccessException("Missing user id claim.");
+
+        return Guid.Parse(value);
     }
 }
