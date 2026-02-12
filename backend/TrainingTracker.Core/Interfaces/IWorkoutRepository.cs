@@ -11,6 +11,11 @@ public interface IWorkoutRepository
     Task AddAsync(Workout workout, CancellationToken ct = default);
     void Update(Workout workout);
     void Delete(Workout workout);
-
     Task SaveChangesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<Workout>> GetByUserAndDateRangeAsync(
+    Guid userId,
+    DateTime fromInclusive,
+    DateTime toExclusive,
+    CancellationToken ct = default);
+
 }

@@ -47,4 +47,18 @@ public class WorkoutRepository : IWorkoutRepository
     {
         await _context.SaveChangesAsync(ct);
     }
+    public async Task<IReadOnlyList<Workout>> GetByUserAndDateRangeAsync(
+    Guid userId,
+    DateTime fromInclusive,
+    DateTime toExclusive,
+    CancellationToken ct = default)
+    {
+        return await _context.Workouts
+            .Where(w => w.UserId == userId
+                        && w.WorkoutDateTime >= fromInclusive
+                        && w.WorkoutDateTime < toExclusive)
+            .OrderBy(w => w.WorkoutDateTime)
+            .ToListAsync(ct);
+    }
+
 }
