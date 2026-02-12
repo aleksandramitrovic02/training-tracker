@@ -42,4 +42,17 @@ public class UserRepository : IUserRepository
     {
         await _context.SaveChangesAsync(ct);
     }
+
+    public async Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken ct = default)
+    {
+        return await _context.Users
+            .Include(u => u.RefreshTokens)
+            .FirstOrDefaultAsync(u => u.RefreshTokens.Any(rt => rt.Token == refreshToken), ct);
+    }
+    public async Task AddRefreshTokenAsync(RefreshToken token, CancellationToken ct = default)
+    {
+        await _context.RefreshTokens.AddAsync(token, ct);
+    }
+
+
 }
