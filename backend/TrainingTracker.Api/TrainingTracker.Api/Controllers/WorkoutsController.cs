@@ -53,7 +53,7 @@ public class WorkoutsController : ControllerBase
 
         var userId = User.GetUserId();
 
-        // validacija: exercise mora biti korisnikov
+        
         var ex = await _exerciseRepository.GetByIdForUserAsync(request.ExerciseId, userId, ct);
         if (ex == null)
             return BadRequest(new { message = "Invalid ExerciseId." });
