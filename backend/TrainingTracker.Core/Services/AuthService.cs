@@ -113,5 +113,22 @@ public class AuthService : IAuthService
             RefreshToken = newRefreshTokenValue
         };
     }
+    public async Task<bool> LogoutAsync(string refreshToken, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return false;
+
+        var user = await _userRepository.GetByRefreshTokenAsync(refreshToken, ct);
+        if (user == null) return false;
+
+        var token = user.RefreshTokens.FirstOrDefault(rt => rt.Token == refreshToken);
+        if (token == null || !token.IsActive) return false;
+
+        token.RevokedAtUtc = DateTime.UtcNow;
+        await _userRepository.SaveChangesAsync(ct);
+
+        return true;
+    }
+
 
 }
