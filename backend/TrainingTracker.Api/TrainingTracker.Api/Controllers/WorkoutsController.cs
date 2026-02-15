@@ -4,6 +4,7 @@ using TrainingTracker.Api.DTOs.Workouts;
 using TrainingTracker.Api.Extensions;
 using TrainingTracker.Core.Interfaces;
 using TrainingTracker.Domain.Models;
+using TrainingTracker.Domain.Models.Enums;
 
 
 namespace TrainingTracker.Api.Controllers;
@@ -41,6 +42,14 @@ public class WorkoutsController : ControllerBase
 
         return Ok(result);
     }
+
+    [AllowAnonymous]
+    [HttpGet("types")]
+    public ActionResult<string[]> GetTypes()
+    {
+        return Ok(Enum.GetNames(typeof(ExerciseType)));
+    }
+
 
     [HttpPost]
     public async Task<ActionResult<WorkoutResponseDto>> Create([FromBody] CreateWorkoutRequestDto request, CancellationToken ct)
@@ -82,6 +91,44 @@ public class WorkoutsController : ControllerBase
 
         return CreatedAtAction(nameof(GetMy), new { }, response);
     }
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<WorkoutResponseDto>> Update(Guid id, [FromBody] UpdateWorkoutRequestDto request, CancellationToken ct)
+    {
+        var validationError = ValidateUpdate(request);
+        if (validationError != null)
+            return BadRequest(new { message = validationError });
+
+        var userId = User.GetUserId();
+
+        var workout = await _workoutRepository.GetByIdAsync(id, ct);
+        if (workout == null) return NotFound();
+
+        if (workout.UserId != userId) return Forbid();
+
+        workout.ExerciseType = request.ExerciseType;
+        workout.DurationMinutes = request.DurationMinutes;
+        workout.CaloriesBurned = request.CaloriesBurned;
+        workout.Intensity = request.Intensity;
+        workout.Fatigue = request.Fatigue;
+        workout.Notes = request.Notes;
+        workout.WorkoutDateTime = request.WorkoutDateTime;
+
+        _workoutRepository.Update(workout);
+        await _workoutRepository.SaveChangesAsync(ct);
+
+        return Ok(new WorkoutResponseDto
+        {
+            Id = workout.Id,
+            ExerciseType = workout.ExerciseType,
+            DurationMinutes = workout.DurationMinutes,
+            CaloriesBurned = workout.CaloriesBurned,
+            Intensity = workout.Intensity,
+            Fatigue = workout.Fatigue,
+            Notes = workout.Notes,
+            WorkoutDateTime = workout.WorkoutDateTime
+        });
+    }
+
 
     private static string? ValidateCreate(CreateWorkoutRequestDto r)
     {
@@ -92,4 +139,15 @@ public class WorkoutsController : ControllerBase
         if (r.WorkoutDateTime == default) return "WorkoutDateTime is required.";
         return null;
     }
+
+    private static string? ValidateUpdate(UpdateWorkoutRequestDto r)
+    {
+        if (r.DurationMinutes <= 0) return "DurationMinutes must be greater than 0.";
+        if (r.CaloriesBurned < 0) return "CaloriesBurned cannot be negative.";
+        if (r.Intensity is < 1 or > 10) return "Intensity must be between 1 and 10.";
+        if (r.Fatigue is < 1 or > 10) return "Fatigue must be between 1 and 10.";
+        if (r.WorkoutDateTime == default) return "WorkoutDateTime is required.";
+        return null;
+    }
+
 }

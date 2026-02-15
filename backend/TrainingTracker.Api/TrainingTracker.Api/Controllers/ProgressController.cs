@@ -40,14 +40,14 @@ public class ProgressController : ControllerBase
         var result = weeks.Select((w, index) =>
         {
             var weekWorkouts = workouts
-                .Where(x => x.WorkoutDateTime >= w.start && x.WorkoutDateTime <= w.endInclusive)
+                .Where(x => x.WorkoutDateTime >= w.startInclusive && x.WorkoutDateTime < w.endExclusive)
                 .ToList();
 
             return new WeeklyProgressDto
             {
                 WeekNumber = index + 1,
-                WeekStart = w.start,
-                WeekEnd = w.endInclusive,
+                WeekStart = w.startInclusive,
+                WeekEnd = w.endInclusiveForDto,
                 WorkoutCount = weekWorkouts.Count,
                 TotalDurationMinutes = weekWorkouts.Sum(x => x.DurationMinutes),
                 AvgIntensity = weekWorkouts.Count == 0 ? 0 : Math.Round(weekWorkouts.Average(x => x.Intensity), 2),
@@ -58,7 +58,9 @@ public class ProgressController : ControllerBase
         return Ok(result);
     }
 
-    private static List<(DateTime start, DateTime endInclusive)> BuildWeeksForMonth(DateTime monthStart, DateTime monthEndExclusive)
+    private static List<(DateTime startInclusive, DateTime endExclusive, DateTime endInclusiveForDto)> BuildWeeksForMonth(
+    DateTime monthStart,
+    DateTime monthEndExclusive)
     {
         // Week starts Monday
         static DateTime StartOfWeekMonday(DateTime d)
@@ -69,21 +71,24 @@ public class ProgressController : ControllerBase
 
         var firstWeekStart = StartOfWeekMonday(monthStart);
         var lastDayInclusive = monthEndExclusive.AddDays(-1).Date;
-        var weeks = new List<(DateTime start, DateTime endInclusive)>();
+
+        var weeks = new List<(DateTime, DateTime, DateTime)>();
 
         var cursor = firstWeekStart;
         while (cursor <= lastDayInclusive)
         {
-            var end = cursor.AddDays(6).Date;
+            var weekEndInclusive = cursor.AddDays(6).Date;
 
-            
             var startClamped = cursor < monthStart.Date ? monthStart.Date : cursor;
-            var endClamped = end > lastDayInclusive ? lastDayInclusive : end;
+            var endClampedInclusive = weekEndInclusive > lastDayInclusive ? lastDayInclusive : weekEndInclusive;
 
-            weeks.Add((startClamped, endClamped));
+            var endExclusive = endClampedInclusive.AddDays(1);
+
+            weeks.Add((startClamped, endExclusive, endClampedInclusive));
             cursor = cursor.AddDays(7);
         }
 
         return weeks;
     }
+
 }
