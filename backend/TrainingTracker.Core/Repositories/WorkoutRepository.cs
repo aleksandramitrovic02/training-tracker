@@ -17,12 +17,14 @@ public class WorkoutRepository : IWorkoutRepository
     public async Task<Workout?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {
         return await _context.Workouts
+            .Include(w => w.Exercise)
             .FirstOrDefaultAsync(w => w.Id == id, ct);
     }
 
     public async Task<IReadOnlyList<Workout>> GetByUserIdAsync(Guid userId, CancellationToken ct = default)
     {
         return await _context.Workouts
+            .Include(w => w.Exercise)
             .Where(w => w.UserId == userId)
             .OrderByDescending(w => w.WorkoutDateTime)
             .ToListAsync(ct);
@@ -47,18 +49,19 @@ public class WorkoutRepository : IWorkoutRepository
     {
         await _context.SaveChangesAsync(ct);
     }
+
     public async Task<IReadOnlyList<Workout>> GetByUserAndDateRangeAsync(
-    Guid userId,
-    DateTime fromInclusive,
-    DateTime toExclusive,
-    CancellationToken ct = default)
+        Guid userId,
+        DateTime fromInclusive,
+        DateTime toExclusive,
+        CancellationToken ct = default)
     {
         return await _context.Workouts
+            .Include(w => w.Exercise)
             .Where(w => w.UserId == userId
                         && w.WorkoutDateTime >= fromInclusive
                         && w.WorkoutDateTime < toExclusive)
             .OrderBy(w => w.WorkoutDateTime)
             .ToListAsync(ct);
     }
-
 }

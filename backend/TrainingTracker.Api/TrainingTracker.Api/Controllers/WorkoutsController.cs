@@ -4,8 +4,6 @@ using TrainingTracker.Api.DTOs.Workouts;
 using TrainingTracker.Api.Extensions;
 using TrainingTracker.Core.Interfaces;
 using TrainingTracker.Domain.Models;
-using TrainingTracker.Domain.Models.Enums;
-
 
 namespace TrainingTracker.Api.Controllers;
 
@@ -15,10 +13,12 @@ namespace TrainingTracker.Api.Controllers;
 public class WorkoutsController : ControllerBase
 {
     private readonly IWorkoutRepository _workoutRepository;
+    private readonly IExerciseRepository _exerciseRepository;
 
-    public WorkoutsController(IWorkoutRepository workoutRepository)
+    public WorkoutsController(IWorkoutRepository workoutRepository, IExerciseRepository exerciseRepository)
     {
         _workoutRepository = workoutRepository;
+        _exerciseRepository = exerciseRepository;
     }
 
     [HttpGet("my")]
@@ -31,7 +31,8 @@ public class WorkoutsController : ControllerBase
         var result = workouts.Select(w => new WorkoutResponseDto
         {
             Id = w.Id,
-            ExerciseType = w.ExerciseType,
+            ExerciseId = w.ExerciseId,
+            ExerciseName = w.Exercise?.Name ?? string.Empty,
             DurationMinutes = w.DurationMinutes,
             CaloriesBurned = w.CaloriesBurned,
             Intensity = w.Intensity,
@@ -43,14 +44,6 @@ public class WorkoutsController : ControllerBase
         return Ok(result);
     }
 
-    [AllowAnonymous]
-    [HttpGet("types")]
-    public ActionResult<string[]> GetTypes()
-    {
-        return Ok(Enum.GetNames(typeof(ExerciseType)));
-    }
-
-
     [HttpPost]
     public async Task<ActionResult<WorkoutResponseDto>> Create([FromBody] CreateWorkoutRequestDto request, CancellationToken ct)
     {
@@ -60,11 +53,16 @@ public class WorkoutsController : ControllerBase
 
         var userId = User.GetUserId();
 
+        // validacija: exercise mora biti korisnikov
+        var ex = await _exerciseRepository.GetByIdForUserAsync(request.ExerciseId, userId, ct);
+        if (ex == null)
+            return BadRequest(new { message = "Invalid ExerciseId." });
+
         var workout = new Workout
         {
             Id = Guid.NewGuid(),
             UserId = userId,
-            ExerciseType = request.ExerciseType,
+            ExerciseId = request.ExerciseId,
             DurationMinutes = request.DurationMinutes,
             CaloriesBurned = request.CaloriesBurned,
             Intensity = request.Intensity,
@@ -77,10 +75,12 @@ public class WorkoutsController : ControllerBase
         await _workoutRepository.AddAsync(workout, ct);
         await _workoutRepository.SaveChangesAsync(ct);
 
+        // (Repo GetById već Include-uje Exercise, ali ovde imamo ex pa vraćamo iz njega)
         var response = new WorkoutResponseDto
         {
             Id = workout.Id,
-            ExerciseType = workout.ExerciseType,
+            ExerciseId = workout.ExerciseId,
+            ExerciseName = ex.Name,
             DurationMinutes = workout.DurationMinutes,
             CaloriesBurned = workout.CaloriesBurned,
             Intensity = workout.Intensity,
@@ -91,6 +91,7 @@ public class WorkoutsController : ControllerBase
 
         return CreatedAtAction(nameof(GetMy), new { }, response);
     }
+
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<WorkoutResponseDto>> Update(Guid id, [FromBody] UpdateWorkoutRequestDto request, CancellationToken ct)
     {
@@ -105,7 +106,11 @@ public class WorkoutsController : ControllerBase
 
         if (workout.UserId != userId) return Forbid();
 
-        workout.ExerciseType = request.ExerciseType;
+        var ex = await _exerciseRepository.GetByIdForUserAsync(request.ExerciseId, userId, ct);
+        if (ex == null)
+            return BadRequest(new { message = "Invalid ExerciseId." });
+
+        workout.ExerciseId = request.ExerciseId;
         workout.DurationMinutes = request.DurationMinutes;
         workout.CaloriesBurned = request.CaloriesBurned;
         workout.Intensity = request.Intensity;
@@ -119,7 +124,8 @@ public class WorkoutsController : ControllerBase
         return Ok(new WorkoutResponseDto
         {
             Id = workout.Id,
-            ExerciseType = workout.ExerciseType,
+            ExerciseId = workout.ExerciseId,
+            ExerciseName = ex.Name,
             DurationMinutes = workout.DurationMinutes,
             CaloriesBurned = workout.CaloriesBurned,
             Intensity = workout.Intensity,
@@ -129,9 +135,25 @@ public class WorkoutsController : ControllerBase
         });
     }
 
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+
+        var workout = await _workoutRepository.GetByIdAsync(id, ct);
+        if (workout == null) return NotFound();
+
+        if (workout.UserId != userId) return Forbid();
+
+        _workoutRepository.Delete(workout);
+        await _workoutRepository.SaveChangesAsync(ct);
+
+        return NoContent();
+    }
 
     private static string? ValidateCreate(CreateWorkoutRequestDto r)
     {
+        if (r.ExerciseId == Guid.Empty) return "ExerciseId is required.";
         if (r.DurationMinutes <= 0) return "DurationMinutes must be greater than 0.";
         if (r.CaloriesBurned < 0) return "CaloriesBurned cannot be negative.";
         if (r.Intensity is < 1 or > 10) return "Intensity must be between 1 and 10.";
@@ -142,6 +164,7 @@ public class WorkoutsController : ControllerBase
 
     private static string? ValidateUpdate(UpdateWorkoutRequestDto r)
     {
+        if (r.ExerciseId == Guid.Empty) return "ExerciseId is required.";
         if (r.DurationMinutes <= 0) return "DurationMinutes must be greater than 0.";
         if (r.CaloriesBurned < 0) return "CaloriesBurned cannot be negative.";
         if (r.Intensity is < 1 or > 10) return "Intensity must be between 1 and 10.";
@@ -149,5 +172,4 @@ public class WorkoutsController : ControllerBase
         if (r.WorkoutDateTime == default) return "WorkoutDateTime is required.";
         return null;
     }
-
 }
