@@ -14,7 +14,6 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     children: [
       { path: 'workouts', loadComponent: () => import('./workouts/pages/workouts.page').then(m => m.WorkoutsPage) },
-      { path: 'exercises', loadComponent: () => import('./exercises/pages/exercises.page').then(m => m.ExercisesPage) },
       { path: 'progress', loadComponent: () => import('./progress/pages/progress.page').then(m => m.ProgressPage) },
     ]
   },

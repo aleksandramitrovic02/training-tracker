@@ -6,8 +6,8 @@ import { CommonModule } from '@angular/common';
   selector: 'app-progress-page',
   imports: [CommonModule],
   template: `
-    <h2>Napredak</h2>
-    <p>Sledeće pravimo prikaz po mesecu/nedeljama.</p>
+    <h2>Progress</h2>
+    <p>Next: monthly/weekly view.</p>
   `
 })
 export class ProgressPage {}

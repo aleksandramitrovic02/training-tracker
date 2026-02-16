@@ -9,12 +9,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 
-import { Exercise } from '../../exercises/exercises.models';
-import { Workout } from '../workouts.models';
+import { ExerciseType, Workout } from '../workouts.models';
 
 export interface WorkoutDialogData {
   mode: 'create' | 'edit';
-  exercises: Exercise[];
+  exerciseTypes: ExerciseType[];
   workout?: Workout;
 }
 
@@ -33,58 +32,58 @@ export interface WorkoutDialogData {
     MatNativeDateModule,
   ],
   template: `
-    <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Dodaj trening' : 'Izmeni trening' }}</h2>
+    <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Add Workout' : 'Edit Workout' }}</h2>
 
     <div mat-dialog-content>
       <form [formGroup]="form" class="grid">
 
         <mat-form-field appearance="outline" class="full">
-          <mat-label>Vežba</mat-label>
-          <mat-select formControlName="exerciseId">
-            <mat-option *ngFor="let e of data.exercises" [value]="e.id">
-              {{ e.name }}
+          <mat-label>Exercise</mat-label>
+          <mat-select formControlName="exerciseType">
+            <mat-option *ngFor="let et of data.exerciseTypes" [value]="et.value">
+              {{ et.name }}
             </mat-option>
           </mat-select>
-          <mat-error *ngIf="form.controls.exerciseId.invalid && form.controls.exerciseId.touched">
-            Izaberi vežbu.
+          <mat-error *ngIf="form.controls.exerciseType.invalid && form.controls.exerciseType.touched">
+            Select an exercise.
           </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Trajanje (min)</mat-label>
+          <mat-label>Duration (min)</mat-label>
           <input matInput type="number" formControlName="durationMinutes" />
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Kalorije</mat-label>
+          <mat-label>Calories</mat-label>
           <input matInput type="number" formControlName="caloriesBurned" />
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Intenzitet (1-10)</mat-label>
+          <mat-label>Intensity (1-10)</mat-label>
           <input matInput type="number" formControlName="intensity" />
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Umor (1-10)</mat-label>
+          <mat-label>Fatigue (1-10)</mat-label>
           <input matInput type="number" formControlName="fatigue" />
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full">
-          <mat-label>Datum</mat-label>
+          <mat-label>Date</mat-label>
           <input matInput [matDatepicker]="picker" formControlName="date" />
           <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
           <mat-datepicker #picker></mat-datepicker>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full">
-          <mat-label>Vreme (HH:mm)</mat-label>
+          <mat-label>Time (HH:mm)</mat-label>
           <input matInput placeholder="18:30" formControlName="time" />
           <mat-hint>Format: 09:05, 18:30</mat-hint>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full">
-          <mat-label>Beleške</mat-label>
+          <mat-label>Notes</mat-label>
           <textarea matInput rows="3" formControlName="notes"></textarea>
         </mat-form-field>
 
@@ -92,9 +91,9 @@ export interface WorkoutDialogData {
     </div>
 
     <div mat-dialog-actions align="end">
-      <button mat-button (click)="close()">Otkaži</button>
+      <button mat-button (click)="close()">Cancel</button>
       <button mat-raised-button color="primary" (click)="save()" [disabled]="form.invalid">
-        Sačuvaj
+        Save
       </button>
     </div>
   `,
@@ -120,7 +119,7 @@ export class WorkoutDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: WorkoutDialogData
   ) {
     this.form = this.fb.group({
-      exerciseId: ['', Validators.required],
+      exerciseType: ['', Validators.required],
       durationMinutes: [30, [Validators.required, Validators.min(1)]],
       caloriesBurned: [0, [Validators.required, Validators.min(0)]],
       intensity: [5, [Validators.required, Validators.min(1), Validators.max(10)]],
@@ -134,7 +133,7 @@ export class WorkoutDialogComponent {
       const dt = new Date(w.workoutDateTime);
 
       this.form.patchValue({
-        exerciseId: w.exerciseId,
+        exerciseType: w.exerciseType,
         durationMinutes: w.durationMinutes,
         caloriesBurned: w.caloriesBurned,
         intensity: w.intensity,
@@ -158,7 +157,7 @@ export class WorkoutDialogComponent {
     const workoutDateTime = this.combineDateTime(v.date!, v.time!);
 
     this.ref.close({
-      exerciseId: v.exerciseId!,
+      exerciseType: Number(v.exerciseType),
       durationMinutes: Number(v.durationMinutes),
       caloriesBurned: Number(v.caloriesBurned),
       intensity: Number(v.intensity),

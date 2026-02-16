@@ -28,8 +28,8 @@ import { AuthService } from '../../core/services/auth.service';
     <div class="wrap">
       <mat-card class="card">
         <div class="header">
-          <h1>Kreiraj nalog</h1>
-          <p>Započni svoj fitness put danas</p>
+          <h1>Create account</h1>
+          <p>Start your fitness journey today</p>
         </div>
 
         <form [formGroup]="form" (ngSubmit)="submit()">
@@ -37,7 +37,7 @@ import { AuthService } from '../../core/services/auth.service';
             <mat-label>Email</mat-label>
             <input matInput formControlName="email" type="email" />
             <mat-error *ngIf="form.controls.email.invalid && form.controls.email.touched">
-              Unesi validan email.
+              Enter a valid email.
             </mat-error>
           </mat-form-field>
 
@@ -45,18 +45,18 @@ import { AuthService } from '../../core/services/auth.service';
             <mat-label>Password</mat-label>
             <input matInput formControlName="password" type="password" />
             <mat-error *ngIf="form.controls.password.invalid && form.controls.password.touched">
-              Min 6 karaktera.
+              Minimum 6 characters.
             </mat-error>
           </mat-form-field>
 
           <button mat-raised-button color="primary" class="full submit-btn" [disabled]="form.invalid || loading">
-            {{ loading ? 'Kreiranje...' : 'Registruj se' }}
+            {{ loading ? 'Creating...' : 'Sign up' }}
           </button>
         </form>
 
         <div class="links">
-          <span>Već imaš nalog?</span>
-          <a routerLink="/login" class="login-link">Prijavi se</a>
+          <span>Already have an account?</span>
+          <a routerLink="/login" class="login-link">Sign in</a>
         </div>
       </mat-card>
     </div>
@@ -149,12 +149,12 @@ export class RegisterPage {
     this.auth.register({ email: email!, password: password! }).subscribe({
       next: () => {
         this.loading = false;
-        this.snack.open('Registracija uspešna. Uloguj se.', 'OK', { duration: 2500 });
+        this.snack.open('Registration successful. Please sign in.', 'OK', { duration: 2500 });
         this.router.navigate(['/login']);
       },
       error: (err) => {
         this.loading = false;
-        this.snack.open(err?.error?.message ?? 'Registracija nije uspela', 'OK', { duration: 3000 });
+        this.snack.open(err?.error?.message ?? 'Registration failed', 'OK', { duration: 3000 });
       }
     });
   }

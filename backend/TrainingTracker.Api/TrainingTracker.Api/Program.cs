@@ -7,7 +7,6 @@ using TrainingTracker.Core.Interfaces;
 using TrainingTracker.Core.Repositories;
 using TrainingTracker.Core.Services;
 using TrainingTracker.Domain.Data;
-using TrainingTracker.Infrastructure.Repositories;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,7 +21,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IWorkoutRepository, WorkoutRepository>();
-builder.Services.AddScoped<IExerciseRepository, ExerciseRepository>();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();

@@ -7,8 +7,6 @@ export interface WeeklyProgress {
   avgFatigue: number;
 }
 
-export interface MonthlyProgressResponse {
-  year: number;
-  month: number;
-  weeks: WeeklyProgress[];
-}
+export type MonthlyProgressResponse = WeeklyProgress[];
+
+export type ProgressViewMode = 'weekly' | 'monthly';

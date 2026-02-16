@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,14 +10,13 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { WorkoutsService } from '../../core/services/workouts.service';
-import { ExercisesService } from '../../core/services/exercises.service';
-import { Workout } from '../workouts.models';
-import { Exercise } from '../../exercises/exercises.models';
+import { Workout, ExerciseType } from '../workouts.models';
 import { WorkoutDialogComponent } from '../components/workou-dialog.component';
 
 @Component({
   standalone: true,
   selector: 'app-workouts-page',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     MatButtonModule,
@@ -31,13 +31,13 @@ import { WorkoutDialogComponent } from '../components/workou-dialog.component';
       <div class="headerContent">
         <mat-icon class="headerIcon">fitness_center</mat-icon>
         <div>
-          <h2>Treninzi</h2>
-          <p class="subtitle">Dodaj i prati svoje treninge</p>
+          <h2>Workouts</h2>
+          <p class="subtitle">Add and track your workouts</p>
         </div>
       </div>
       <button mat-raised-button class="addBtn" (click)="openCreate()">
         <mat-icon>add</mat-icon>
-        Dodaj trening
+        Add workout
       </button>
     </div>
 
@@ -47,13 +47,13 @@ import { WorkoutDialogComponent } from '../components/workou-dialog.component';
       <table mat-table [dataSource]="items" *ngIf="items.length > 0">
 
         <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Datum</th>
+          <th mat-header-cell *matHeaderCellDef>Date</th>
           <td mat-cell *matCellDef="let row">{{ row.workoutDateTime | date:'dd.MM.yyyy HH:mm' }}</td>
         </ng-container>
 
         <ng-container matColumnDef="exercise">
-          <th mat-header-cell *matHeaderCellDef>Vežba</th>
-          <td mat-cell *matCellDef="let row">{{ row.exerciseName }}</td>
+          <th mat-header-cell *matHeaderCellDef>Exercise</th>
+          <td mat-cell *matCellDef="let row">{{ getExerciseTypeName(row.exerciseType) }}</td>
         </ng-container>
 
         <ng-container matColumnDef="duration">
@@ -72,12 +72,12 @@ import { WorkoutDialogComponent } from '../components/workou-dialog.component';
         </ng-container>
 
         <ng-container matColumnDef="fatigue">
-          <th mat-header-cell *matHeaderCellDef>Umor</th>
+          <th mat-header-cell *matHeaderCellDef>Fatigue</th>
           <td mat-cell *matCellDef="let row">{{ row.fatigue }}</td>
         </ng-container>
 
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef style="width:160px">Akcije</th>
+          <th mat-header-cell *matHeaderCellDef style="width:160px">Actions</th>
           <td mat-cell *matCellDef="let row" class="actions">
             <button mat-icon-button (click)="openEdit(row)" aria-label="Edit">
               <mat-icon>edit</mat-icon>
@@ -94,8 +94,8 @@ import { WorkoutDialogComponent } from '../components/workou-dialog.component';
 
       <div class="emptyState" *ngIf="items.length === 0">
         <mat-icon class="emptyIcon">fitness_center</mat-icon>
-        <h3>Nema treninga</h3>
-        <p>Klikni na dugme <b>Dodaj trening</b> da započneš praćenje.</p>
+        <h3>No workouts</h3>
+        <p>Click <b>Add workout</b> to start tracking.</p>
       </div>
     </div>
   `,
@@ -188,16 +188,16 @@ import { WorkoutDialogComponent } from '../components/workou-dialog.component';
 })
 export class WorkoutsPage implements OnInit {
   items: Workout[] = [];
-  exercises: Exercise[] = [];
+  exerciseTypes: ExerciseType[] = [];
   loading = false;
 
   cols = ['date', 'exercise', 'duration', 'calories', 'intensity', 'fatigue', 'actions'];
 
   constructor(
     private workoutsApi: WorkoutsService,
-    private exercisesApi: ExercisesService,
     private dialog: MatDialog,
-    private snack: MatSnackBar
+    private snack: MatSnackBar,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -205,30 +205,40 @@ export class WorkoutsPage implements OnInit {
   }
 
   refreshAll() {
-    this.exercisesApi.my().subscribe({
-      next: (ex) => { this.exercises = ex; },
-      error: () => { this.exercises = []; }
-    });
-
-    this.workoutsApi.my().subscribe({
-      next: (res: Workout[]) => {
-        this.items = res;
+    this.loading = true;
+    forkJoin({
+      exerciseTypes: this.workoutsApi.getExerciseTypes(),
+      workouts: this.workoutsApi.my()
+    }).subscribe({
+      next: (res) => {
+        this.exerciseTypes = res.exerciseTypes;
+        this.items = res.workouts;
+        this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (err: any) => {
-        this.snack.open(err?.error?.message ?? 'Greška pri učitavanju treninga', 'OK', { duration: 3000 });
+        this.exerciseTypes = [];
+        this.items = [];
+        this.loading = false;
+        this.cdr.markForCheck();
+        this.snack.open(err?.error?.message ?? 'Failed to load workouts', 'OK', { duration: 3000 });
       }
     });
   }
 
+  getExerciseTypeName(value: number): string {
+    return this.exerciseTypes.find(et => et.value === value)?.name ?? 'Unknown';
+  }
+
   openCreate() {
-    if (this.exercises.length === 0) {
-      this.snack.open('Prvo dodaj bar jednu vežbu u sekciji Vežbe.', 'OK', { duration: 3000 });
+    if (!this.exerciseTypes || this.exerciseTypes.length === 0) {
+      this.snack.open('Loading exercise types, please try again shortly...', 'OK', { duration: 3000 });
       return;
     }
 
     const ref = this.dialog.open(WorkoutDialogComponent, {
       width: '520px',
-      data: { mode: 'create', exercises: this.exercises }
+      data: { mode: 'create', exerciseTypes: this.exerciseTypes }
     });
 
     ref.afterClosed().subscribe(result => {
@@ -236,10 +246,10 @@ export class WorkoutsPage implements OnInit {
 
       this.workoutsApi.create(result).subscribe({
         next: () => {
-          this.snack.open('Trening dodat', 'OK', { duration: 2000 });
+          this.snack.open('Workout added', 'OK', { duration: 2000 });
           this.refreshAll();
         },
-        error: (err: any) => this.snack.open(err?.error?.message ?? 'Greška pri dodavanju', 'OK', { duration: 3000 })
+        error: (err: any) => this.snack.open(err?.error?.message ?? 'Failed to add workout', 'OK', { duration: 3000 })
       });
     });
   }
@@ -247,7 +257,7 @@ export class WorkoutsPage implements OnInit {
   openEdit(row: Workout) {
     const ref = this.dialog.open(WorkoutDialogComponent, {
       width: '520px',
-      data: { mode: 'edit', exercises: this.exercises, workout: row }
+      data: { mode: 'edit', exerciseTypes: this.exerciseTypes, workout: row }
     });
 
     ref.afterClosed().subscribe(result => {
@@ -255,24 +265,25 @@ export class WorkoutsPage implements OnInit {
 
       this.workoutsApi.update(row.id, result).subscribe({
         next: () => {
-          this.snack.open('Trening izmenjen', 'OK', { duration: 2000 });
+          this.snack.open('Workout updated', 'OK', { duration: 2000 });
           this.refreshAll();
         },
-        error: (err: any) => this.snack.open(err?.error?.message ?? 'Greška pri izmeni', 'OK', { duration: 3000 })
+        error: (err: any) => this.snack.open(err?.error?.message ?? 'Failed to update workout', 'OK', { duration: 3000 })
       });
     });
   }
 
   remove(row: Workout) {
-    const ok = confirm(`Obrisati trening: "${row.exerciseName}" (${new Date(row.workoutDateTime).toLocaleString()}) ?`);
+    const exerciseName = this.getExerciseTypeName(row.exerciseType);
+    const ok = confirm(`Delete workout: "${exerciseName}" (${new Date(row.workoutDateTime).toLocaleString()}) ?`);
     if (!ok) return;
 
     this.workoutsApi.delete(row.id).subscribe({
       next: () => {
-        this.snack.open('Trening obrisan', 'OK', { duration: 2000 });
+        this.snack.open('Workout deleted', 'OK', { duration: 2000 });
         this.refreshAll();
       },
-      error: (err: any) => this.snack.open(err?.error?.message ?? 'Greška pri brisanju', 'OK', { duration: 3000 })
+      error: (err: any) => this.snack.open(err?.error?.message ?? 'Failed to delete workout', 'OK', { duration: 3000 })
     });
   }
 }

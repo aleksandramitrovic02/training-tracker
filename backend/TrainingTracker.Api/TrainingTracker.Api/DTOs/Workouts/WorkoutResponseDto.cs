@@ -1,10 +1,11 @@
-﻿namespace TrainingTracker.Api.DTOs.Workouts;
+﻿using TrainingTracker.Domain.Enums;
+
+namespace TrainingTracker.Api.DTOs.Workouts;
 
 public class WorkoutResponseDto
 {
     public Guid Id { get; set; }
-    public Guid ExerciseId { get; set; }
-    public string ExerciseName { get; set; } = string.Empty;
+    public ExerciseType ExerciseType { get; set; }
     public int DurationMinutes { get; set; }
     public int CaloriesBurned { get; set; }
     public int Intensity { get; set; }

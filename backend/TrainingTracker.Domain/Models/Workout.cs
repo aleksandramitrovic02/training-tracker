@@ -1,4 +1,5 @@
-﻿
+﻿using TrainingTracker.Domain.Enums;
+
 namespace TrainingTracker.Domain.Models;
 
 public class Workout
@@ -8,8 +9,7 @@ public class Workout
     public Guid UserId { get; set; }
     public User User { get; set; } = default!;
 
-    public Guid ExerciseId { get; set; }
-    public Exercise Exercise { get; set; } = null!;
+    public ExerciseType ExerciseType { get; set; }
 
     public int DurationMinutes { get; set; }
     public int CaloriesBurned { get; set; }
