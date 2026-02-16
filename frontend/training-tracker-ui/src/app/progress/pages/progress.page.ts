@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { MatCardModule } from '@angular/material/card';
@@ -6,29 +6,32 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 
 // Services & Models
 import { ProgressService } from '../../core/services/progress.service';
-import { MonthlyProgressResponse } from '../progress.models';
+import { MonthlyProgressResponse, ProgressViewMode } from '../progress.models';
 
 @Component({
   standalone: true,
   selector: 'app-progress-page',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatButtonToggleModule
   ],
   template: `
     <div class="pageHeader">
       <div class="headerContent">
         <mat-icon class="headerIcon">insights</mat-icon>
         <div>
-          <h2>Napredak</h2>
-          <p class="subtitle">Prati svoj napredak kroz vreme</p>
+          <h2>Progress</h2>
+          <p class="subtitle">Track your progress over time</p>
         </div>
       </div>
 
@@ -45,84 +48,108 @@ import { MonthlyProgressResponse } from '../progress.models';
           <mat-icon>chevron_right</mat-icon>
         </button>
       </div>
+
+      <mat-button-toggle-group class="viewToggle" [value]="viewMode" (change)="onViewChange($event)">
+        <mat-button-toggle value="weekly">
+          <mat-icon>calendar_view_week</mat-icon>
+          Weekly
+        </mat-button-toggle>
+        <mat-button-toggle value="monthly">
+          <mat-icon>calendar_view_month</mat-icon>
+          Monthly
+        </mat-button-toggle>
+      </mat-button-toggle-group>
     </div>
 
     <mat-progress-bar *ngIf="loading" mode="indeterminate" class="loader"></mat-progress-bar>
 
-    <div class="grid" *ngIf="!loading && data">
+    <div class="grid" *ngIf="!loading && data; else noData">
       <mat-card class="summary">
-        <h3 class="summaryTitle">Mesečna statistika</h3>
+        <h3 class="summaryTitle">Monthly Summary</h3>
         <div class="sumGrid">
           <div class="sumItem item1">
             <mat-icon class="sumIcon">fitness_center</mat-icon>
-            <div class="k">Ukupno treninga</div>
+            <div class="k">Total Workouts</div>
             <div class="v">{{ totalWorkouts }}</div>
           </div>
           <div class="sumItem item2">
             <mat-icon class="sumIcon">schedule</mat-icon>
-            <div class="k">Ukupno minuta</div>
+            <div class="k">Total Minutes</div>
             <div class="v">{{ totalMinutes }}</div>
           </div>
           <div class="sumItem item3">
             <mat-icon class="sumIcon">bolt</mat-icon>
-            <div class="k">Prosečan intenzitet</div>
+            <div class="k">Avg Intensity</div>
             <div class="v">{{ avgIntensityAll }}</div>
           </div>
           <div class="sumItem item4">
             <mat-icon class="sumIcon">battery_alert</mat-icon>
-            <div class="k">Prosečan umor</div>
+            <div class="k">Avg Fatigue</div>
             <div class="v">{{ avgFatigueAll }}</div>
           </div>
         </div>
       </mat-card>
 
-      <mat-card class="week" *ngFor="let w of data.weeks; let i = index" [class.week-alt]="i % 2 === 0">
-        <div class="weekTitle">
-          <mat-icon>calendar_today</mat-icon>
-          {{ w.weekStart | date:'dd.MM' }} - {{ w.weekEnd | date:'dd.MM' }}
-        </div>
-
-        <div class="statsGrid">
-          <div class="stat">
-            <mat-icon class="statIcon">fitness_center</mat-icon>
-            <div>
-              <div class="statLabel">Treninzi</div>
-              <div class="statValue">{{ w.workoutCount }}</div>
-            </div>
+      <!-- WEEKLY VIEW -->
+      <ng-container *ngIf="viewMode === 'weekly'">
+        <mat-card class="week" *ngFor="let w of data; let i = index" [class.week-alt]="i % 2 === 0">
+          <div class="weekTitle">
+            <mat-icon>calendar_today</mat-icon>
+            {{ w.weekStart | date:'dd.MM' }} - {{ w.weekEnd | date:'dd.MM' }}
           </div>
 
-          <div class="stat">
-            <mat-icon class="statIcon">schedule</mat-icon>
-            <div>
-              <div class="statLabel">Minuti</div>
-              <div class="statValue">{{ w.totalDurationMinutes }}</div>
+          <div class="statsGrid">
+            <div class="stat">
+              <mat-icon class="statIcon">fitness_center</mat-icon>
+              <div>
+                <div class="statLabel">Workouts</div>
+                <div class="statValue">{{ w.workoutCount }}</div>
+              </div>
+            </div>
+
+            <div class="stat">
+              <mat-icon class="statIcon">schedule</mat-icon>
+              <div>
+                <div class="statLabel">Minutes</div>
+                <div class="statValue">{{ w.totalDurationMinutes }}</div>
+              </div>
+            </div>
+
+            <div class="stat">
+              <mat-icon class="statIcon">bolt</mat-icon>
+              <div>
+                <div class="statLabel">Intensity</div>
+                <div class="statValue">{{ fmt(w.avgIntensity) }}</div>
+              </div>
+            </div>
+
+            <div class="stat">
+              <mat-icon class="statIcon">battery_alert</mat-icon>
+              <div>
+                <div class="statLabel">Fatigue</div>
+                <div class="statValue">{{ fmt(w.avgFatigue) }}</div>
+              </div>
             </div>
           </div>
+        </mat-card>
+      </ng-container>
 
-          <div class="stat">
-            <mat-icon class="statIcon">bolt</mat-icon>
-            <div>
-              <div class="statLabel">Intenzitet</div>
-              <div class="statValue">{{ fmt(w.avgIntensity) }}</div>
-            </div>
-          </div>
-
-          <div class="stat">
-            <mat-icon class="statIcon">battery_alert</mat-icon>
-            <div>
-              <div class="statLabel">Umor</div>
-              <div class="statValue">{{ fmt(w.avgFatigue) }}</div>
-            </div>
-          </div>
-        </div>
-      </mat-card>
-
-      <div class="emptyState" *ngIf="data.weeks.length === 0">
+      <div class="emptyState" *ngIf="data.length === 0">
         <mat-icon class="emptyIcon">calendar_today</mat-icon>
-        <h3>Nema podataka</h3>
-        <p>Nema treninga za ovaj mesec.</p>
+        <h3>No Data</h3>
+        <p>No workouts for this month.</p>
       </div>
     </div>
+
+    <ng-template #noData>
+      <div class="grid">
+        <div class="emptyState">
+          <mat-icon class="emptyIcon">calendar_today</mat-icon>
+          <h3>Loading...</h3>
+          <p>Please wait.</p>
+        </div>
+      </div>
+    </ng-template>
   `,
   styles: [`
     :host {
@@ -182,6 +209,18 @@ import { MonthlyProgressResponse } from '../progress.models';
       color: white;
       min-width: 140px;
       text-align: center;
+    }
+    .viewToggle {
+      margin-left: auto;
+      background: rgba(255,255,255,0.15) !important;
+      border-radius: 8px;
+    }
+    .viewToggle ::ng-deep .mat-mdc-button-toggle {
+      color: rgba(255,255,255,0.8) !important;
+    }
+    .viewToggle ::ng-deep .mat-mdc-button-toggle.mat-button-toggle-checked {
+      background: rgba(255,255,255,0.3) !important;
+      color: white !important;
     }
     .loader {
       border-radius: 4px;
@@ -319,6 +358,7 @@ import { MonthlyProgressResponse } from '../progress.models';
       font-size: 14px;
     }
 
+    
     @media (max-width: 1100px) {
       .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .sumGrid { grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -332,12 +372,17 @@ import { MonthlyProgressResponse } from '../progress.models';
 })
 export class ProgressPage implements OnInit {
   loading = false;
-  data: MonthlyProgressResponse | null = null;
+  data: MonthlyProgressResponse = [];
+  viewMode: ProgressViewMode = 'weekly';
 
   selectedYear: number;
   selectedMonth: number; // 1-12
 
-  constructor(private api: ProgressService, private snack: MatSnackBar) {
+  constructor(
+    private api: ProgressService,
+    private snack: MatSnackBar,
+    private cdr: ChangeDetectorRef
+  ) {
     const now = new Date();
     this.selectedYear = now.getFullYear();
     this.selectedMonth = now.getMonth() + 1;
@@ -348,14 +393,24 @@ export class ProgressPage implements OnInit {
   }
 
   load() {
+    this.loading = true;
     this.api.monthly(this.selectedYear, this.selectedMonth).subscribe({
       next: (res: MonthlyProgressResponse) => {
         this.data = res;
+        this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (err: any) => {
-        this.snack.open(err?.error?.message ?? 'Greška pri učitavanju napretka', 'OK', { duration: 3000 });
+        console.error('Error loading progress:', err);
+        this.snack.open('Failed to load progress', 'OK', { duration: 3000 });
+        this.loading = false;
+        this.cdr.markForCheck();
       }
     });
+  }
+
+  onViewChange(event: any) {
+    this.viewMode = event.value as ProgressViewMode;
   }
 
   prevMonth() {
@@ -371,7 +426,7 @@ export class ProgressPage implements OnInit {
   }
 
   monthName(m: number) {
-    const names = ['Januar','Februar','Mart','April','Maj','Jun','Jul','Avgust','Septembar','Oktobar','Novembar','Decembar'];
+    const names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     return names[m - 1] ?? '';
   }
 
@@ -381,22 +436,22 @@ export class ProgressPage implements OnInit {
   }
 
   get totalWorkouts() {
-    return (this.data?.weeks ?? []).reduce((s, w) => s + (w.workoutCount ?? 0), 0);
+    return this.data.reduce((s, w) => s + (w.workoutCount ?? 0), 0);
   }
 
   get totalMinutes() {
-    return (this.data?.weeks ?? []).reduce((s, w) => s + (w.totalDurationMinutes ?? 0), 0);
+    return this.data.reduce((s, w) => s + (w.totalDurationMinutes ?? 0), 0);
   }
 
   get avgIntensityAll() {
-    const weeks = (this.data?.weeks ?? []).filter(w => (w.workoutCount ?? 0) > 0);
+    const weeks = this.data.filter(w => (w.workoutCount ?? 0) > 0);
     if (weeks.length === 0) return '0.0';
     const sum = weeks.reduce((s, w) => s + (w.avgIntensity ?? 0), 0);
     return (sum / weeks.length).toFixed(1);
   }
 
   get avgFatigueAll() {
-    const weeks = (this.data?.weeks ?? []).filter(w => (w.workoutCount ?? 0) > 0);
+    const weeks = this.data.filter(w => (w.workoutCount ?? 0) > 0);
     if (weeks.length === 0) return '0.0';
     const sum = weeks.reduce((s, w) => s + (w.avgFatigue ?? 0), 0);
     return (sum / weeks.length).toFixed(1);

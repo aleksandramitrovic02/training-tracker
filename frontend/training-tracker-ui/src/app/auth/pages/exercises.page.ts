@@ -6,8 +6,8 @@ import { CommonModule } from '@angular/common';
   selector: 'app-exercises-page',
   imports: [CommonModule],
   template: `
-    <h2>Vežbe</h2>
-    <p>Sledeće pravimo CRUD i povezivanje sa backendom.</p>
+    <h2>Exercises</h2>
+    <p>Next: CRUD and backend integration.</p>
   `
 })
 export class ExercisesPage {}

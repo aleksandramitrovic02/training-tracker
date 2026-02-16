@@ -1,7 +1,11 @@
+export interface ExerciseType {
+  value: number;
+  name: string;
+}
+
 export interface Workout {
   id: string;
-  exerciseId: string;
-  exerciseName: string;
+  exerciseType: number;
   durationMinutes: number;
   caloriesBurned: number;
   intensity: number;
@@ -11,7 +15,7 @@ export interface Workout {
 }
 
 export interface CreateWorkoutRequest {
-  exerciseId: string;
+  exerciseType: number;
   durationMinutes: number;
   caloriesBurned: number;
   intensity: number;

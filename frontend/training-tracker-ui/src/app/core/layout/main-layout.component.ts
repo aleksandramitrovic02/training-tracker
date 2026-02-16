@@ -37,17 +37,12 @@ import { AuthService } from '../services/auth.service';
         <mat-nav-list>
           <a mat-list-item routerLink="/workouts" routerLinkActive="active">
             <mat-icon>fitness_center</mat-icon>
-            <span>Treninzi</span>
-          </a>
-
-          <a mat-list-item routerLink="/exercises" routerLinkActive="active">
-            <mat-icon>list</mat-icon>
-            <span>Vežbe</span>
+            <span>Workouts</span>
           </a>
 
           <a mat-list-item routerLink="/progress" routerLinkActive="active">
             <mat-icon>insights</mat-icon>
-            <span>Napredak</span>
+            <span>Progress</span>
           </a>
         </mat-nav-list>
 
@@ -55,7 +50,7 @@ import { AuthService } from '../services/auth.service';
 
         <button mat-stroked-button class="logout" (click)="logout()">
           <mat-icon>logout</mat-icon>
-          Logout
+          Log out
         </button>
       </mat-sidenav>
 

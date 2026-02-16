@@ -3,13 +3,17 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/enviroment';
-import { Workout, CreateWorkoutRequest, UpdateWorkoutRequest } from '../../workouts/workouts.models';
+import { Workout, CreateWorkoutRequest, UpdateWorkoutRequest, ExerciseType } from '../../workouts/workouts.models';
 
 @Injectable({ providedIn: 'root' })
 export class WorkoutsService {
   private base = `${environment.apiUrl}/api/workouts`;
 
   constructor(private http: HttpClient) {}
+
+  getExerciseTypes(): Observable<ExerciseType[]> {
+    return this.http.get<ExerciseType[]>(`${this.base}/exercise-types`);
+  }
 
   my(): Observable<Workout[]> {
     return this.http.get<Workout[]>(`${this.base}/my`);
