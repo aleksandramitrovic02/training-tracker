@@ -30,13 +30,13 @@ import { ExerciseDialogComponent } from '../components/exercise-dialog.component
       <div class="headerContent">
         <mat-icon class="headerIcon">list</mat-icon>
         <div>
-          <h2>Vežbe</h2>
-          <p class="subtitle">Upravljaj svojim vežbama</p>
+          <h2>Exercises</h2>
+          <p class="subtitle">Manage your exercises</p>
         </div>
       </div>
       <button mat-raised-button class="addBtn" (click)="openCreate()">
         <mat-icon>add</mat-icon>
-        Dodaj vežbu
+        Add exercise
       </button>
     </div>
 
@@ -46,12 +46,12 @@ import { ExerciseDialogComponent } from '../components/exercise-dialog.component
       <table mat-table [dataSource]="items" *ngIf="items.length > 0">
 
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Naziv</th>
+          <th mat-header-cell *matHeaderCellDef>Name</th>
           <td mat-cell *matCellDef="let row">{{ row.name }}</td>
         </ng-container>
 
         <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef style="width:160px">Akcije</th>
+          <th mat-header-cell *matHeaderCellDef style="width:160px">Actions</th>
           <td mat-cell *matCellDef="let row" class="actions">
             <button mat-icon-button (click)="openEdit(row)" aria-label="Edit">
               <mat-icon>edit</mat-icon>
@@ -68,8 +68,8 @@ import { ExerciseDialogComponent } from '../components/exercise-dialog.component
 
       <div class="emptyState" *ngIf="items.length === 0">
         <mat-icon class="emptyIcon">list</mat-icon>
-        <h3>Nema vežbi</h3>
-        <p>Dodaj svoju prvu vežbu da bi mogao da kreiraš treninge.</p>
+        <h3>No exercises</h3>
+        <p>Add your first exercise to create workouts.</p>
       </div>
     </div>
   `,
@@ -182,7 +182,7 @@ export class ExercisesPage implements OnInit {
         this.items = res;
       },
       error: (err: any) => {
-        this.snack.open(err?.error?.message ?? 'Greška pri učitavanju vežbi', 'OK', { duration: 3000 });
+        this.snack.open(err?.error?.message ?? 'Failed to load exercises', 'OK', { duration: 3000 });
       }
     });
   }
@@ -197,10 +197,10 @@ export class ExercisesPage implements OnInit {
       if (!result) return;
       this.api.create({ name: result.name }).subscribe({
         next: () => {
-          this.snack.open('Vežba dodata', 'OK', { duration: 2000 });
+          this.snack.open('Exercise added', 'OK', { duration: 2000 });
           this.load();
         },
-        error: (err: any) => this.snack.open(err?.error?.message ?? 'Greška pri dodavanju', 'OK', { duration: 3000 })
+        error: (err: any) => this.snack.open(err?.error?.message ?? 'Failed to add exercise', 'OK', { duration: 3000 })
       });
     });
   }
@@ -215,24 +215,24 @@ export class ExercisesPage implements OnInit {
       if (!result) return;
       this.api.update(row.id, { name: result.name }).subscribe({
         next: () => {
-          this.snack.open('Vežba izmenjena', 'OK', { duration: 2000 });
+          this.snack.open('Exercise updated', 'OK', { duration: 2000 });
           this.load();
         },
-        error: (err: any) => this.snack.open(err?.error?.message ?? 'Greška pri izmeni', 'OK', { duration: 3000 })
+        error: (err: any) => this.snack.open(err?.error?.message ?? 'Failed to update exercise', 'OK', { duration: 3000 })
       });
     });
   }
 
   remove(row: Exercise) {
-    const ok = confirm(`Obrisati vežbu: "${row.name}" ?`);
+    const ok = confirm(`Delete exercise: "${row.name}" ?`);
     if (!ok) return;
 
     this.api.delete(row.id).subscribe({
       next: () => {
-        this.snack.open('Vežba obrisana', 'OK', { duration: 2000 });
+        this.snack.open('Exercise deleted', 'OK', { duration: 2000 });
         this.load();
       },
-      error: (err: any) => this.snack.open(err?.error?.message ?? 'Greška pri brisanju', 'OK', { duration: 3000 })
+      error: (err: any) => this.snack.open(err?.error?.message ?? 'Failed to delete exercise', 'OK', { duration: 3000 })
     });
   }
 }

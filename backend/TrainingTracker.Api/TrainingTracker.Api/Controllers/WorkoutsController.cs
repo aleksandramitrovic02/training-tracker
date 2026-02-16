@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using TrainingTracker.Api.DTOs.Workouts;
 using TrainingTracker.Api.Extensions;
 using TrainingTracker.Core.Interfaces;
+using TrainingTracker.Domain.Enums;
 using TrainingTracker.Domain.Models;
 
 namespace TrainingTracker.Api.Controllers;
@@ -13,12 +14,24 @@ namespace TrainingTracker.Api.Controllers;
 public class WorkoutsController : ControllerBase
 {
     private readonly IWorkoutRepository _workoutRepository;
-    private readonly IExerciseRepository _exerciseRepository;
 
-    public WorkoutsController(IWorkoutRepository workoutRepository, IExerciseRepository exerciseRepository)
+    public WorkoutsController(IWorkoutRepository workoutRepository)
     {
         _workoutRepository = workoutRepository;
-        _exerciseRepository = exerciseRepository;
+    }
+
+    [HttpGet("exercise-types")]
+    public ActionResult<IEnumerable<ExerciseTypeDto>> GetExerciseTypes()
+    {
+        var exerciseTypes = Enum.GetValues<ExerciseType>()
+            .Select(e => new ExerciseTypeDto
+            {
+                Value = (int)e,
+                Name = e.ToString()
+            })
+            .ToList();
+
+        return Ok(exerciseTypes);
     }
 
     [HttpGet("my")]
@@ -31,8 +44,7 @@ public class WorkoutsController : ControllerBase
         var result = workouts.Select(w => new WorkoutResponseDto
         {
             Id = w.Id,
-            ExerciseId = w.ExerciseId,
-            ExerciseName = w.Exercise?.Name ?? string.Empty,
+            ExerciseType = w.ExerciseType,
             DurationMinutes = w.DurationMinutes,
             CaloriesBurned = w.CaloriesBurned,
             Intensity = w.Intensity,
@@ -53,16 +65,11 @@ public class WorkoutsController : ControllerBase
 
         var userId = User.GetUserId();
 
-        
-        var ex = await _exerciseRepository.GetByIdForUserAsync(request.ExerciseId, userId, ct);
-        if (ex == null)
-            return BadRequest(new { message = "Invalid ExerciseId." });
-
         var workout = new Workout
         {
             Id = Guid.NewGuid(),
             UserId = userId,
-            ExerciseId = request.ExerciseId,
+            ExerciseType = request.ExerciseType,
             DurationMinutes = request.DurationMinutes,
             CaloriesBurned = request.CaloriesBurned,
             Intensity = request.Intensity,
@@ -75,12 +82,10 @@ public class WorkoutsController : ControllerBase
         await _workoutRepository.AddAsync(workout, ct);
         await _workoutRepository.SaveChangesAsync(ct);
 
-        // (Repo GetById već Include-uje Exercise, ali ovde imamo ex pa vraćamo iz njega)
         var response = new WorkoutResponseDto
         {
             Id = workout.Id,
-            ExerciseId = workout.ExerciseId,
-            ExerciseName = ex.Name,
+            ExerciseType = workout.ExerciseType,
             DurationMinutes = workout.DurationMinutes,
             CaloriesBurned = workout.CaloriesBurned,
             Intensity = workout.Intensity,
@@ -106,11 +111,7 @@ public class WorkoutsController : ControllerBase
 
         if (workout.UserId != userId) return Forbid();
 
-        var ex = await _exerciseRepository.GetByIdForUserAsync(request.ExerciseId, userId, ct);
-        if (ex == null)
-            return BadRequest(new { message = "Invalid ExerciseId." });
-
-        workout.ExerciseId = request.ExerciseId;
+        workout.ExerciseType = request.ExerciseType;
         workout.DurationMinutes = request.DurationMinutes;
         workout.CaloriesBurned = request.CaloriesBurned;
         workout.Intensity = request.Intensity;
@@ -124,8 +125,7 @@ public class WorkoutsController : ControllerBase
         return Ok(new WorkoutResponseDto
         {
             Id = workout.Id,
-            ExerciseId = workout.ExerciseId,
-            ExerciseName = ex.Name,
+            ExerciseType = workout.ExerciseType,
             DurationMinutes = workout.DurationMinutes,
             CaloriesBurned = workout.CaloriesBurned,
             Intensity = workout.Intensity,
@@ -153,7 +153,7 @@ public class WorkoutsController : ControllerBase
 
     private static string? ValidateCreate(CreateWorkoutRequestDto r)
     {
-        if (r.ExerciseId == Guid.Empty) return "ExerciseId is required.";
+        if (!Enum.IsDefined(typeof(ExerciseType), r.ExerciseType)) return "Invalid ExerciseType.";
         if (r.DurationMinutes <= 0) return "DurationMinutes must be greater than 0.";
         if (r.CaloriesBurned < 0) return "CaloriesBurned cannot be negative.";
         if (r.Intensity is < 1 or > 10) return "Intensity must be between 1 and 10.";
@@ -164,7 +164,7 @@ public class WorkoutsController : ControllerBase
 
     private static string? ValidateUpdate(UpdateWorkoutRequestDto r)
     {
-        if (r.ExerciseId == Guid.Empty) return "ExerciseId is required.";
+        if (!Enum.IsDefined(typeof(ExerciseType), r.ExerciseType)) return "Invalid ExerciseType.";
         if (r.DurationMinutes <= 0) return "DurationMinutes must be greater than 0.";
         if (r.CaloriesBurned < 0) return "CaloriesBurned cannot be negative.";
         if (r.Intensity is < 1 or > 10) return "Intensity must be between 1 and 10.";

@@ -25,24 +25,24 @@ export interface ExerciseDialogData {
     MatButtonModule,
   ],
   template: `
-    <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Dodaj vežbu' : 'Izmeni vežbu' }}</h2>
+    <h2 mat-dialog-title>{{ data.mode === 'create' ? 'Add exercise' : 'Edit exercise' }}</h2>
 
     <div mat-dialog-content>
       <form [formGroup]="form">
         <mat-form-field appearance="outline" class="full">
-          <mat-label>Naziv</mat-label>
+          <mat-label>Name</mat-label>
           <input matInput formControlName="name" autocomplete="off" />
           <mat-error *ngIf="form.controls.name.invalid && form.controls.name.touched">
-            Naziv je obavezan (min 2).
+            Name is required (min 2).
           </mat-error>
         </mat-form-field>
       </form>
     </div>
 
     <div mat-dialog-actions align="end">
-      <button mat-button (click)="close()">Otkaži</button>
+      <button mat-button (click)="close()">Cancel</button>
       <button mat-raised-button color="primary" [disabled]="form.invalid" (click)="save()">
-        Sačuvaj
+        Save
       </button>
     </div>
   `,

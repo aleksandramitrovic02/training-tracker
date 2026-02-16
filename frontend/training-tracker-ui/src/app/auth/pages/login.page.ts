@@ -28,8 +28,8 @@ import { AuthService } from '../../core/services/auth.service';
     <div class="wrap">
       <mat-card class="card">
         <div class="header">
-          <h1>Dobrodošli nazad</h1>
-          <p>Ulogujte se na vaš nalog</p>
+          <h1>Welcome back</h1>
+          <p>Sign in to your account</p>
         </div>
 
         <form [formGroup]="form" (ngSubmit)="submit()">
@@ -37,7 +37,7 @@ import { AuthService } from '../../core/services/auth.service';
             <mat-label>Email</mat-label>
             <input matInput formControlName="email" type="email" />
             <mat-error *ngIf="form.controls.email.invalid && form.controls.email.touched">
-              Unesi validan email.
+              Enter a valid email.
             </mat-error>
           </mat-form-field>
 
@@ -45,18 +45,18 @@ import { AuthService } from '../../core/services/auth.service';
             <mat-label>Password</mat-label>
             <input matInput formControlName="password" type="password" />
             <mat-error *ngIf="form.controls.password.invalid && form.controls.password.touched">
-              Password je obavezan (min 6).
+              Password is required (min 6).
             </mat-error>
           </mat-form-field>
 
           <button mat-raised-button color="primary" class="full submit-btn" [disabled]="form.invalid || loading">
-            {{ loading ? 'Učitavanje...' : 'Prijavi se' }}
+            {{ loading ? 'Loading...' : 'Sign in' }}
           </button>
         </form>
 
         <div class="links">
-          <span>Nemaš nalog?</span>
-          <a routerLink="/register" class="register-link">Registruj se</a>
+          <span>Don't have an account?</span>
+          <a routerLink="/register" class="register-link">Create one</a>
         </div>
       </mat-card>
     </div>
@@ -153,7 +153,7 @@ export class LoginPage {
       },
       error: (err) => {
         this.loading = false;
-        this.snack.open(err?.error?.message ?? 'Login nije uspeo', 'OK', { duration: 3000 });
+        this.snack.open(err?.error?.message ?? 'Login failed', 'OK', { duration: 3000 });
       }
     });
   }
